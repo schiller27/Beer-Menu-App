@@ -24,6 +24,40 @@ const client = new Anthropic({
   apiKey: process.env.VITE_ANTHROPIC_API_KEY
 });
 
+// Helper function to upload image to Supabase Storage
+async function uploadImageToSupabase(imageBuffer, fileName) {
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.warn('Supabase Storage not configured, skipping image upload');
+    return null;
+  }
+
+  try {
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/menu-images/${fileName}`;
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'image/jpeg'
+      },
+      body: imageBuffer
+    });
+
+    if (!response.ok) {
+      console.error('Supabase upload failed:', response.status);
+      return null;
+    }
+
+    // Return public URL for the image
+    return `${SUPABASE_URL}/storage/v1/object/public/menu-images/${fileName}`;
+  } catch (err) {
+    console.error('Error uploading image:', err);
+    return null;
+  }
+}
+
 app.post('/api/process-menu', async (req, res) => {
   try {
     const { image, location_name } = req.body;
@@ -102,7 +136,13 @@ Rules:
     const cleanJson = jsonText.replace(/```json\n?|\n?```/g, '');
     const beers = JSON.parse(cleanJson);
 
-    res.json({ beers });
+    // Upload compressed image to Supabase Storage
+    const timestamp = Date.now();
+    const fileName = `menu-${timestamp}-${location_name.replace(/\s+/g, '-').toLowerCase()}.jpg`;
+    const imageUrl = await uploadImageToSupabase(compressedBuffer, fileName);
+    console.log('Image upload result:', imageUrl ? 'Success' : 'Failed or skipped');
+
+    res.json({ beers, imageUrl });
   } catch (error) {
     console.error('Error processing menu:', error);
     console.error('Error details:', error.message);
