@@ -123,9 +123,13 @@ app.post('/save-beers', async (req, res) => {
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+    console.log('Save beers - checking env vars:');
+    console.log('VITE_SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
+
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_URL');
-      return res.status(500).json({ error: 'Server misconfigured: missing Supabase service role key. Add SUPABASE_SERVICE_ROLE_KEY to .env' });
+      console.error('Missing Supabase config');
+      return res.status(500).json({ error: 'Server misconfigured: missing Supabase credentials. Check .env or Railway variables.' });
     }
 
     // Insert into Supabase REST API
@@ -163,7 +167,11 @@ app.post('/api/save-beers', async (req, res) => {
     }
 
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE || process.env.VITE_SUPABASE_SERVICE_ROLE;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log('API save-beers - checking env vars:');
+    console.log('VITE_SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING');
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
       console.error('Supabase URL or service role key not configured');
