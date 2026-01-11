@@ -16,7 +16,6 @@ export default function BeerMenuApp() {
   const [allBeers, setAllBeers] = useState([]);
   const [loadingBeers, setLoadingBeers] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     if (view === 'browse') {
@@ -65,11 +64,6 @@ export default function BeerMenuApp() {
       return;
     }
 
-    if (!apiKey.trim()) {
-      setError('Please provide your Claude API key');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -81,69 +75,30 @@ export default function BeerMenuApp() {
         reader.readAsDataURL(image);
       });
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Send to backend for AI processing
+      const response = await fetch('/api/process-menu', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2000,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: base64
-                  }
-                },
-                {
-                  type: 'text',
-                  text: `Extract beer menu information from this image. Return ONLY a JSON array with this exact structure, no other text:
-[
-  {
-    "beer_name": "string",
-    "abv": "number or null",
-    "ibu": "number or null", 
-    "beer_type": "string",
-    "brewery_name": "string or null",
-    "description": "string or null"
-  }
-]
-
-Rules:
-- Extract ALL beers visible in the image
-- For ABV and IBU, extract only the numeric value
-- If information is missing, use null
-- Beer type should be standardized (IPA, Lager, Stout, Porter, Ale, Seltzer, Witbier, etc.)
-- Return valid JSON only, no markdown formatting`
-                }
-              ]
-            }
-          ]
+          image: base64,
+          location_name: locationName
         })
       });
 
       const data = await response.json();
       
-      if (data.content && data.content[0]?.text) {
-        const jsonText = data.content[0].text.trim();
-        const cleanJson = jsonText.replace(/```json\n?|\n?```/g, '');
-        const beers = JSON.parse(cleanJson);
-        
-        const enrichedBeers = beers.map(beer => ({
+      if (data.beers) {
+        const enrichedBeers = data.beers.map(beer => ({
           ...beer,
           location_name: locationName,
           date_captured: new Date().toISOString()
         }));
         
         setResult(enrichedBeers);
+      } else {
+        setError(data.error || 'Failed to process image. Please try again.');
       }
     } catch (err) {
       console.error('Processing error:', err);
@@ -255,20 +210,6 @@ Rules:
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="mb-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Claude API Key *
-              </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Get your API key from console.anthropic.com</p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Location Name *
               </label>
               <input
@@ -330,7 +271,7 @@ Rules:
             {!result && (
               <button
                 onClick={processImage}
-                disabled={!image || !locationName.trim() || !apiKey.trim() || loading}
+                disabled={!image || !locationName.trim() || loading}
                 className="w-full bg-amber-600 text-white py-4 rounded-lg font-semibold hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
               >
                 {loading ? (
