@@ -218,12 +218,15 @@ export default function BeerMenuApp() {
         {/* Header */}
         <div className="text-center mb-8 pt-8">
           <div className="flex items-center justify-center gap-4 mb-2">
-            {/* BeerMaiden Logo */}
+            {/* BeerMaiden Logo Image */}
             <img 
-              src="https://images.unsplash.com/photo-1551632786-de41ec16d41d?w=100&h=100&fit=crop&q=80" 
+              src="/beermaiden-logo.png" 
               alt="BeerMaiden Logo" 
               className="w-16 h-16 rounded-full border-4 border-amber-600 shadow-lg object-cover"
-              loading="lazy"
+              onError={(e) => {
+                // Fallback if image not found
+                e.target.style.display = 'none';
+              }}
             />
             <h1 className="text-4xl font-bold text-gray-800">BeerMaiden</h1>
           </div>
