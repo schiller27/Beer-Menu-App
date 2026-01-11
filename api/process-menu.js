@@ -42,13 +42,13 @@ export default async function handler(req, res) {
     const imageBuffer = Buffer.from(imageData, 'base64');
     console.log(`Original image size: ${imageBuffer.length} bytes`);
 
-    // Compress the image using sharp
+    // Compress the image using sharp - more aggressive for Vercel's 4.5MB limit
     const compressedBuffer = await sharp(imageBuffer)
-      .resize(1200, 1200, {
+      .resize(800, 800, {
         fit: 'inside',
         withoutEnlargement: true
       })
-      .jpeg({ quality: 75 })
+      .jpeg({ quality: 60, progressive: true })
       .toBuffer();
 
     const compressedBase64 = compressedBuffer.toString('base64');
