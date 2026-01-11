@@ -18,6 +18,7 @@ export default function BeerMenuApp() {
   const [loadingBeers, setLoadingBeers] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [expandedImage, setExpandedImage] = useState(null);
+  const [breweryFilter, setBreweryFilter] = useState('all');
 
   useEffect(() => {
     if (view === 'browse') {
@@ -426,7 +427,24 @@ export default function BeerMenuApp() {
         {/* Browse View */}
         {view === 'browse' && (
           <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Beer Catalog</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Beer Menus</h2>
+            
+            {/* Brewery Filter */}
+            {allBeers.length > 0 && (
+              <div className="mb-6 p-4 bg-amber-50 rounded-lg">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Brewery:</label>
+                <select
+                  value={breweryFilter}
+                  onChange={(e) => setBreweryFilter(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="all">All Breweries</option>
+                  {Array.from(new Set(allBeers.map(b => b.brewery_name).filter(Boolean))).sort().map(brewery => (
+                    <option key={brewery} value={brewery}>{brewery}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             {loadingBeers ? (
               <div className="flex items-center justify-center py-12">
@@ -439,64 +457,79 @@ export default function BeerMenuApp() {
               </div>
             ) : (
               <div className="space-y-8">
-                {/* Group by beer type */}
-                {['Lager', 'Sour', 'IPA', 'Stout', 'Pilsner', 'Other'].map(beerType => {
-                  const typeBeers = allBeers.filter(b => {
-                    const type = b.beer_type || 'Other';
-                    if (beerType === 'Other') {
-                      return !['Lager', 'Sour', 'IPA', 'Stout', 'Pilsner'].includes(type);
-                    }
-                    return type === beerType;
+                {Object.entries(beersByLocation).map(([location, beers]) => {
+                  // Filter by brewery
+                  const filteredBeers = breweryFilter === 'all' 
+                    ? beers 
+                    : beers.filter(b => b.brewery_name === breweryFilter);
+                  
+                  if (filteredBeers.length === 0) return null;
+                  
+                  // Sort by beer type alphabetically
+                  const sortedBeers = [...filteredBeers].sort((a, b) => {
+                    const typeA = (a.beer_type || 'Other').toLowerCase();
+                    const typeB = (b.beer_type || 'Other').toLowerCase();
+                    return typeA.localeCompare(typeB);
                   });
-                  
-                  if (typeBeers.length === 0) return null;
-                  
+
                   return (
-                    <div key={beerType}>
-                      <h3 className="text-lg font-bold text-amber-700 mb-4 border-b-2 border-amber-200 pb-2">
-                        {beerType}s ({typeBeers.length})
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {typeBeers.map((beer, index) => (
-                          <div key={beer.id || index} className="border border-amber-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex gap-4">
-                              {/* Beer Image */}
-                              {beer.image_url && (
-                                <button
-                                  onClick={() => setExpandedImage(beer.image_url)}
-                                  className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded cursor-pointer hover:opacity-80 transition overflow-hidden"
-                                >
-                                  <img 
-                                    src={beer.image_url} 
-                                    alt="Menu"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => e.target.style.display = 'none'}
-                                  />
-                                </button>
-                              )}
-                              {/* Beer Info */}
-                              <div className="flex-1">
-                                <h4 className="font-bold text-gray-800">{beer.beer_name}</h4>
-                                {beer.brewery_name && (
-                                  <p className="text-sm text-gray-600">{beer.brewery_name}</p>
-                                )}
-                                <div className="flex gap-2 mt-1 text-xs text-gray-600">
-                                  {beer.abv && <span>ABV: {beer.abv}%</span>}
-                                  {beer.ibu && <span>IBU: {beer.ibu}</span>}
-                                </div>
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs text-gray-500">
-                                    {beer.location_name}
-                                  </span>
-                                  <span className="text-xs text-gray-400">
-                                    {beer.date_captured && formatDate(beer.date_captured)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            {beer.description && (
-                              <p className="text-sm text-gray-600 mt-2 italic">{beer.description}</p>
+                    <div key={location} className="border-b pb-6 last:border-b-0">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold text-gray-800">{location}</h3>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(beers[0].created_at)}
+                        </span>
+                      </div>
+                      {/* Beer Image Thumbnail */}
+                      {beers[0]?.image_url && (
+                        <button
+                          onClick={() => setExpandedImage(beers[0].image_url)}
+                          className="mb-4 max-w-xs rounded-lg overflow-hidden border-2 border-amber-200 hover:border-amber-500 transition cursor-pointer"
+                        >
+                          <img
+                            src={beers[0].image_url}
+                            alt="Menu"
+                            className="w-full h-64 object-cover hover:opacity-80 transition"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        </button>
+                      )}
+                      <div className="grid gap-3">
+                        {sortedBeers.map((beer, index) => (
+                          <div key={beer.id || index} className="border-l-4 border-amber-500 pl-4 py-2 hover:bg-amber-50 transition rounded flex gap-4">
+                            {/* Beer Image Thumbnail */}
+                            {beer.image_url && (
+                              <button
+                                onClick={() => setExpandedImage(beer.image_url)}
+                                className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded cursor-pointer hover:opacity-80 transition overflow-hidden"
+                              >
+                                <img 
+                                  src={beer.image_url} 
+                                  alt="Menu"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => e.target.style.display = 'none'}
+                                />
+                              </button>
                             )}
+                            {/* Beer Info */}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <h4 className="font-bold text-gray-800">{beer.beer_name}</h4>
+                                <span className="text-sm text-gray-500 whitespace-nowrap ml-2">
+                                  {beer.beer_type || 'Other'}
+                                </span>
+                              </div>
+                              {beer.brewery_name && (
+                                <p className="text-sm text-gray-600 italic">{beer.brewery_name}</p>
+                              )}
+                              <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                                {beer.abv && <span>ABV: {beer.abv}%</span>}
+                                {beer.ibu && <span>IBU: {beer.ibu}</span>}
+                              </div>
+                              {beer.description && (
+                                <p className="text-sm text-gray-500 mt-1">{beer.description}</p>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
