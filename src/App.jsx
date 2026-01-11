@@ -16,6 +16,7 @@ export default function BeerMenuApp() {
   const [allBeers, setAllBeers] = useState([]);
   const [loadingBeers, setLoadingBeers] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     if (view === 'browse') {
@@ -64,6 +65,11 @@ export default function BeerMenuApp() {
       return;
     }
 
+    if (!apiKey.trim()) {
+      setError('Please provide your Claude API key');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -79,6 +85,8 @@ export default function BeerMenuApp() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
@@ -247,6 +255,20 @@ Rules:
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="mb-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Claude API Key *
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">Get your API key from console.anthropic.com</p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Location Name *
               </label>
               <input
@@ -308,7 +330,7 @@ Rules:
             {!result && (
               <button
                 onClick={processImage}
-                disabled={!image || !locationName.trim() || loading}
+                disabled={!image || !locationName.trim() || !apiKey.trim() || loading}
                 className="w-full bg-amber-600 text-white py-4 rounded-lg font-semibold hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
               >
                 {loading ? (
