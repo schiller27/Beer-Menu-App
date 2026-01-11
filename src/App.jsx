@@ -220,7 +220,7 @@ export default function BeerMenuApp() {
           <div className="flex items-center justify-center gap-4 mb-2">
             {/* BeerMaiden Logo Image */}
             <img 
-              src="/beermaiden-logo.png" 
+              src="/beer-maiden-logo.png" 
               alt="BeerMaiden Logo" 
               className="w-16 h-16 rounded-full border-4 border-amber-600 shadow-lg object-cover"
               onError={(e) => {
