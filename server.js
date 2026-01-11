@@ -196,9 +196,13 @@ app.post('/api/save-beers', async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// Serve React app for all non-API routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+// Serve React app for all non-API routes (SPA fallback)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  } else {
+    next();
+  }
 });
 
 app.listen(PORT, () => {
