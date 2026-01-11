@@ -167,13 +167,21 @@ export default function BeerMenuApp() {
     setError(null);
 
     try {
+      // Add location_name and image_url to beers before saving
+      const beersWithLocation = result.map(beer => ({
+        ...beer,
+        brewery_name: beer.brewery_name || locationName, // Use location as brewery if not extracted
+        location_name: locationName,
+        image_url: imageUrl
+      }));
+
       // Send beers to server which will insert using a Supabase service role key
       const resp = await fetch('/api/save-beers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ beers: result })
+        body: JSON.stringify({ beers: beersWithLocation })
       });
 
       if (!resp.ok) {
@@ -227,7 +235,7 @@ export default function BeerMenuApp() {
             <img 
               src="/beer-maiden-logo.png" 
               alt="BeerMaiden Logo" 
-              className="w-16 h-16 rounded-full border-4 border-amber-600 shadow-lg object-cover"
+              className="h-20 shadow-lg object-contain"
               onError={(e) => {
                 // Fallback if image not found
                 e.target.style.display = 'none';
