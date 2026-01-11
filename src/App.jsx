@@ -89,6 +89,11 @@ export default function BeerMenuApp() {
 
       const data = await response.json();
       
+      if (!response.ok) {
+        setError(`API Error ${response.status}: ${data.error || 'Unknown error'}`);
+        return;
+      }
+
       if (data.beers) {
         const enrichedBeers = data.beers.map(beer => ({
           ...beer,
