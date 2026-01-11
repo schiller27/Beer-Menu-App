@@ -28,7 +28,7 @@ app.post('/process-menu', async (req, res) => {
       return res.status(400).json({ error: 'Missing image or location name' });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.VITE_ANTHROPIC_API_KEY) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
