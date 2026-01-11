@@ -1,7 +1,22 @@
-// Simple mock endpoint for beer menu processing
-// In production, this should call a real AI API
+import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
+
+const client = new Anthropic({
+  apiKey: process.env.VITE_ANTHROPIC_API_KEY
+});
 
 export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,26 +28,80 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing image or location name' });
     }
 
-    // For now, return mock data
-    // In production, send the image to a free AI service like:
-    // - Google Cloud Vision API (free tier)
-    // - Replicate API (free tier)
-    // - HuggingFace API (free tier)
-    
-    const mockBeers = [
-      {
-        beer_name: "Sample IPA",
-        abv: 6.5,
-        ibu: 45,
-        beer_type: "IPA",
-        brewery_name: "Local Brewery",
-        description: "A hoppy IPA with citrus notes"
-      }
-    ];
+    if (!process.env.VITE_ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: 'API key not configured' });
+    }
 
-    return res.status(200).json({ beers: mockBeers });
+    // Convert base64 to buffer and compress
+    let imageData = image;
+    if (image.startsWith('data:')) {
+      imageData = image.split(',')[1];
+    }
+
+    const imageBuffer = Buffer.from(imageData, 'base64');
+    console.log(`Original image size: ${imageBuffer.length} bytes`);
+
+    // Compress the image using sharp
+    const compressedBuffer = await sharp(imageBuffer)
+      .resize(1200, 1200, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 75 })
+      .toBuffer();
+
+    const compressedBase64 = compressedBuffer.toString('base64');
+    console.log(`Compressed image size: ${compressedBuffer.length} bytes`);
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: compressedBase64
+              }
+            },
+            {
+              type: 'text',
+              text: `Extract beer menu information from this image. Return ONLY a JSON array with this exact structure, no other text:
+[
+  {
+    "beer_name": "string",
+    "abv": "number or null",
+    "ibu": "number or null", 
+    "beer_type": "string",
+    "brewery_name": "string or null",
+    "description": "string or null"
+  }
+]
+
+Rules:
+- Extract ALL beers visible in the image
+- For ABV and IBU, extract only the numeric value
+- If information is missing, use null
+- Beer type should be standardized (IPA, Lager, Stout, Porter, Ale, Seltzer, Witbier, etc.)
+- Return valid JSON only, no markdown formatting`
+            }
+          ]
+        }
+      ]
+    });
+
+    const jsonText = response.content[0].text.trim();
+    const cleanJson = jsonText.replace(/```json\n?|\n?```/g, '');
+    const beers = JSON.parse(cleanJson);
+
+    res.status(200).json({ beers });
   } catch (error) {
     console.error('Error processing menu:', error);
-    return res.status(500).json({ error: 'Failed to process image' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to process image' });
   }
 }

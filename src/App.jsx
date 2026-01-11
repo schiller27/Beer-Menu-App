@@ -115,21 +115,19 @@ export default function BeerMenuApp() {
     setError(null);
 
     try {
-      // Save each beer to Supabase
-      const promises = result.map(beer => 
-        fetch(`${SUPABASE_URL}/rest/v1/beers`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(beer)
-        })
-      );
+      // Send beers to server which will insert using a Supabase service role key
+      const resp = await fetch('/api/save-beers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ beers: result })
+      });
 
-      await Promise.all(promises);
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`Server save failed: ${resp.status} ${text}`);
+      }
       setSavedSuccess(true);
       
       // Clear form after 2 seconds
