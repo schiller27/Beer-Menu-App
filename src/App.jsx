@@ -58,6 +58,48 @@ export default function BeerMenuApp() {
     }
   };
 
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Scale down to 800px max - balance between size and readability
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 800;
+          
+          if (width > height) {
+            if (width > maxDim) {
+              height = (height * maxDim) / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = (width * maxDim) / height;
+              height = maxDim;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG at 55% quality - good balance of size vs quality
+          const compressed = canvas.toDataURL('image/jpeg', 0.55);
+          resolve(compressed);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processImage = async () => {
     if (!image || !locationName.trim()) {
       setError('Please provide both an image and location name');
@@ -68,13 +110,12 @@ export default function BeerMenuApp() {
     setError(null);
 
     try {
-      // Convert to base64
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(image);
-      });
+      // Compress image on client side first
+      setError('Compressing image...');
+      const compressedBase64 = await compressImage(image);
+      setError(null);
+
+      console.log('Compressed image size:', compressedBase64.length, 'bytes');
 
       // Send to backend for AI processing
       const response = await fetch('/api/process-menu', {
@@ -83,7 +124,7 @@ export default function BeerMenuApp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image: base64,
+          image: compressedBase64,
           location_name: locationName
         })
       });

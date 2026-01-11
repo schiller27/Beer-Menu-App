@@ -42,17 +42,9 @@ export default async function handler(req, res) {
     const imageBuffer = Buffer.from(imageData, 'base64');
     console.log(`Original image size: ${imageBuffer.length} bytes`);
 
-    // Compress the image using sharp - more aggressive for Vercel's 4.5MB limit
-    const compressedBuffer = await sharp(imageBuffer)
-      .resize(800, 800, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: 60, progressive: true })
-      .toBuffer();
-
-    const compressedBase64 = compressedBuffer.toString('base64');
-    console.log(`Compressed image size: ${compressedBuffer.length} bytes`);
+    // Client already compressed - no need to compress again, just use it
+    const finalBase64 = imageData;
+    console.log(`Using client-compressed base64 size: ${imageData.length} bytes`);
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -66,7 +58,7 @@ export default async function handler(req, res) {
               source: {
                 type: 'base64',
                 media_type: 'image/jpeg',
-                data: compressedBase64
+                data: finalBase64
               }
             },
             {
