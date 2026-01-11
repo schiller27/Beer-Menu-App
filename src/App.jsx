@@ -217,11 +217,16 @@ export default function BeerMenuApp() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Camera className="w-10 h-10 text-amber-600" />
-            <h1 className="text-4xl font-bold text-gray-800">BeerBoard</h1>
+          <div className="flex items-center justify-center gap-4 mb-2">
+            {/* BeerMaiden Logo */}
+            <img 
+              src="/beermaiden-logo.jpg" 
+              alt="BeerMaiden Logo" 
+              className="w-16 h-16 rounded-full border-4 border-amber-600 shadow-lg object-cover"
+            />
+            <h1 className="text-4xl font-bold text-gray-800">BeerMaiden</h1>
           </div>
-          <p className="text-gray-600">Scan and share beer menus from your favorite spots</p>
+          <p className="text-gray-600">Discover and share beer menus from your favorite establishments</p>
         </div>
 
         {/* Navigation */}
