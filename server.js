@@ -14,10 +14,10 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
 
-console.log('API Key loaded:', process.env.ANTHROPIC_API_KEY ? 'Yes (length: ' + process.env.ANTHROPIC_API_KEY.length + ')' : 'No');
+console.log('API Key loaded:', process.env.VITE_ANTHROPIC_API_KEY ? 'Yes (length: ' + process.env.VITE_ANTHROPIC_API_KEY.length + ')' : 'No');
 
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
+  apiKey: process.env.VITE_ANTHROPIC_API_KEY
 });
 
 app.post('/process-menu', async (req, res) => {
@@ -80,7 +80,9 @@ Rules:
     res.json({ beers });
   } catch (error) {
     console.error('Error processing menu:', error);
-    res.status(500).json({ error: 'Failed to process image' });
+    console.error('Error details:', error.message);
+    console.error('Error status:', error.status);
+    res.status(500).json({ error: error.message || 'Failed to process image' });
   }
 });
 
