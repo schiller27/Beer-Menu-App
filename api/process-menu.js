@@ -29,7 +29,8 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.VITE_ANTHROPIC_API_KEY) {
-      return res.status(500).json({ error: 'API key not configured' });
+      console.error('VITE_ANTHROPIC_API_KEY is not configured');
+      return res.status(500).json({ error: 'API key not configured on server' });
     }
 
     // Convert base64 to buffer and compress
@@ -101,7 +102,11 @@ Rules:
     res.status(200).json({ beers });
   } catch (error) {
     console.error('Error processing menu:', error);
-    console.error('Error details:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to process image' });
+    console.error('Error message:', error.message);
+    console.error('Error status:', error.status);
+    res.status(500).json({ 
+      error: error.message || 'Failed to process image',
+      details: error.status ? `API Error ${error.status}` : 'Unknown error'
+    });
   }
 }
