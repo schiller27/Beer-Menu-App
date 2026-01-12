@@ -26,6 +26,11 @@ app.post('/api/process-menu', async (req, res) => {
   try {
     const { image, location_name } = req.body;
 
+    console.log('=== Processing menu request ===');
+    console.log('Location:', location_name);
+    console.log('Image type:', typeof image);
+    console.log('Image length:', image ? image.length : 'null');
+
     if (!image || !location_name) {
       return res.status(400).json({ error: 'Missing image or location name' });
     }
@@ -38,23 +43,15 @@ app.post('/api/process-menu', async (req, res) => {
     // Convert base64 to buffer and compress
     let imageData = image;
     if (image.startsWith('data:')) {
+      console.log('Stripping data URL prefix...');
       imageData = image.split(',')[1];
     }
 
-    const imageBuffer = Buffer.from(imageData, 'base64');
-    console.log(`Original image size: ${imageBuffer.length} bytes`);
+    console.log('Base64 data length:', imageData.length);
 
-    // Compress the image using sharp
-    const compressedBuffer = await sharp(imageBuffer)
-      .resize(1200, 1200, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: 75 })
-      .toBuffer();
-
-    const compressedBase64 = compressedBuffer.toString('base64');
-    console.log(`Compressed image size: ${compressedBuffer.length} bytes`);
+    // Client already compressed - no need to compress again, just use it
+    const finalBase64 = imageData;
+    console.log(`Using client-compressed image`);
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -68,7 +65,7 @@ app.post('/api/process-menu', async (req, res) => {
               source: {
                 type: 'base64',
                 media_type: 'image/jpeg',
-                data: compressedBase64
+                data: finalBase64
               }
             },
             {
