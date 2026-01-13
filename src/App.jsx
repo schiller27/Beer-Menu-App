@@ -231,7 +231,7 @@ export default function BeerMenuApp() {
         {/* Header */}
         <div className="text-center mb-8 pt-8">
           <div className="flex items-center justify-center gap-4 mb-2">
-            <h1 className="text-4xl font-bold text-gray-800">BeerMaiden</h1>
+            <h1 className="text-4xl font-bold text-gray-800">BeerBoard</h1>
           </div>
           <p className="text-gray-600">Discover and share beer menus from your favorite establishments</p>
         </div>
